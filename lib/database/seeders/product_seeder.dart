@@ -202,6 +202,11 @@ class ProductSeeder {
 
     try {
       for (var product in products) {
+        // Data percobaan untuk mempermudah testing
+        final harga = product['harga'] as double;
+        product['harga_beli'] = harga * 0.8;
+        product['stock'] = 25; // Stok default 25
+
         await db.insert(
           'products',
           product,

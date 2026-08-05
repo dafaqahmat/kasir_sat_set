@@ -232,12 +232,47 @@ class _ProductsTabState extends State<ProductsTab> {
               const SizedBox(height: 16),
               GestureDetector(
                 onTap: () async {
-                  final picker = ImagePicker();
-                  final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-                  if (pickedFile != null) {
-                    setStateDialog(() {
-                      selectedImage = File(pickedFile.path);
-                    });
+                  final source = await showModalBottomSheet<ImageSource>(
+                    context: context,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    builder: (context) => SafeArea(
+                      child: Wrap(
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Text(
+                              'Pilih Sumber Foto',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.camera_alt, color: Color(0xFF03D1C5)),
+                            title: const Text('Kamera'),
+                            onTap: () => Navigator.of(context).pop(ImageSource.camera),
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.photo_library, color: Color(0xFF03D1C5)),
+                            title: const Text('Galeri HP'),
+                            onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+
+                  if (source != null) {
+                    final picker = ImagePicker();
+                    final pickedFile = await picker.pickImage(
+                      source: source,
+                      imageQuality: 70, // Kompresi ringan agar tidak memenuhi memori
+                    );
+                    if (pickedFile != null) {
+                      setStateDialog(() {
+                        selectedImage = File(pickedFile.path);
+                      });
+                    }
                   }
                 },
                 child: Container(
