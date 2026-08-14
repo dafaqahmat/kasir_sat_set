@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../database/database_helper.dart';
 import 'forgot_password_screen.dart';
-import 'dashboard_screen.dart';
+import 'admin_dashboard_screen.dart';
+import 'kasir_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -66,8 +67,11 @@ class _LoginScreenState extends State<LoginScreen>
         await prefs.setString('cashier_name', user.name);
 
         if (mounted) {
+          final dashboard = user.isAdmin
+              ? AdminDashboardScreen(user: user)
+              : KasirDashboardScreen(user: user);
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => DashboardScreen(user: user)),
+            MaterialPageRoute(builder: (_) => dashboard),
           );
         }
       } else {

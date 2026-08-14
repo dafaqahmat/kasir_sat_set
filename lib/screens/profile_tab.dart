@@ -151,13 +151,24 @@ class _ProfileTabState extends State<ProfileTab> {
                       color: Colors.white.withOpacity(0.25),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text(
-                      'Bergabung ${_currentUser.createdAt.day}/${_currentUser.createdAt.month}/${_currentUser.createdAt.year}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _currentUser.isAdmin ? Icons.admin_panel_settings_rounded : Icons.point_of_sale_rounded,
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${_currentUser.isAdmin ? 'Admin' : 'Kasir'} · ${_currentUser.createdAt.day}/${_currentUser.createdAt.month}/${_currentUser.createdAt.year}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -187,19 +198,20 @@ class _ProfileTabState extends State<ProfileTab> {
                     ),
                     child: Column(
                       children: [
-                        _MenuItem(
-                          icon: Icons.person_outline_rounded,
-                          title: 'Pengaturan Profil',
-                          color: const Color(0xFF03D1C5),
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ProfileSettingsScreen(
-                                currentUserId: _currentUser.id!,
+                        if (_currentUser.isAdmin)
+                          _MenuItem(
+                            icon: Icons.person_outline_rounded,
+                            title: 'Pengaturan Profil',
+                            color: const Color(0xFF03D1C5),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ProfileSettingsScreen(
+                                  currentUserId: _currentUser.id!,
+                                ),
                               ),
-                            ),
-                          ).then((_) => _refreshUserData()),
-                        ),
+                            ).then((_) => _refreshUserData()),
+                          ),
                         _MenuItem(
                           icon: Icons.print_outlined,
                           title: 'Pengaturan Printer',
@@ -215,38 +227,39 @@ class _ProfileTabState extends State<ProfileTab> {
                           color: const Color(0xFF03D1C5),
                           onTap: _showChangePasswordDialog,
                         ),
-                        _MenuItem(
-                          icon: Icons.info_outline_rounded,
-                          title: 'Tentang Aplikasi',
-                          color: const Color(0xFF03D1C5),
-                          onTap: () => showDialog(
-                            context: context,
-                            builder: (_) => AlertDialog(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              title: const Text(
-                                'Tentang Aplikasi',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              content: const Text(
-                                'Aplikasi Kasir SATSET\n'
-                                'Versi 1.0.0\n\n'
-                                'Dibuat untuk memudahkan transaksi penjualan.\n\n'
-                                'Peringatan:\n'
-                                'Aplikasi ini menyimpan seluruh data di perangkat Anda. '
-                                'Jika Anda menghapus aplikasi atau menghapus data aplikasi, '
-                                'maka seluruh data akan hilang. Aplikasi ini berjalan secara offline.'
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text('OK'),
+                        if (_currentUser.isAdmin)
+                          _MenuItem(
+                            icon: Icons.info_outline_rounded,
+                            title: 'Tentang Aplikasi',
+                            color: const Color(0xFF03D1C5),
+                            onTap: () => showDialog(
+                              context: context,
+                              builder: (_) => AlertDialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
                                 ),
-                              ],
+                                title: const Text(
+                                  'Tentang Aplikasi',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                content: const Text(
+                                  'Aplikasi Kasir SATSET\n'
+                                  'Versi 1.0.0\n\n'
+                                  'Dibuat untuk memudahkan transaksi penjualan.\n\n'
+                                  'Peringatan:\n'
+                                  'Aplikasi ini menyimpan seluruh data di perangkat Anda. '
+                                  'Jika Anda menghapus aplikasi atau menghapus data aplikasi, '
+                                  'maka seluruh data akan hilang. Aplikasi ini berjalan secara offline.'
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('OK'),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
                         _MenuItem(
                           icon: Icons.logout_rounded,
                           title: 'Logout',

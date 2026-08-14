@@ -52,7 +52,7 @@ class DatabaseHelper {
 
     return await sql.openDatabase(
       path,
-      version: 10,
+      version: 11,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -65,6 +65,7 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         password TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'kasir',
         created_at TEXT NOT NULL
       )
     ''');
@@ -209,6 +210,11 @@ class DatabaseHelper {
         created_at TEXT NOT NULL
       )
     ''');
+    }
+
+    if (oldVersion < 11) {
+      await db.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'kasir'");
+      await db.rawUpdate("UPDATE users SET role = 'admin' WHERE id = (SELECT MIN(id) FROM users)");
     }
   }
 
@@ -573,5 +579,48 @@ class DatabaseHelper {
     }
   }
 
-  Future getAllUsers() async {}
+  Future<List<User>> getAllUsers() async {
+    final db = await instance.database;
+    final result = await db.query('users', orderBy: 'name ASC');
+    return result.map((map) => User.fromMap(map)).toList();
+  }
+
+  Future<List<User>> getKasirUsers() async {
+    final db = await instance.database;
+    final result = await db.query(
+      'users',
+      where: "role = 'kasir'",
+      orderBy: 'name ASC',
+    );
+    return result.map((map) => User.fromMap(map)).toList();
+  }
+
+  Future<int> deleteUser(int id) async {
+    final db = await instance.database;
+    return await db.delete(
+      'users',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> updatePasswordById(int id, String newPassword) async {
+    final db = await instance.database;
+    return await db.update(
+      'users',
+      {'password': newPassword},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> updateUserNameById(int id, String newName) async {
+    final db = await instance.database;
+    return await db.update(
+      'users',
+      {'name': newName},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
 }

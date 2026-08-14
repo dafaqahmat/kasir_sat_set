@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../database/database_helper.dart';
@@ -41,46 +42,22 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   void _setupRealtimeListeners() {
-    _transactionSubscription = DatabaseHelper.instance.transactionStream.listen(
-      (_) {
-        if (mounted) {
-          print("Realtime Update: Transaksi berubah, reload dashboard...");
-          _loadDashboardData();
-        }
-      },
-    );
-
+    _transactionSubscription = DatabaseHelper.instance.transactionStream.listen((_) {
+      if (mounted) _loadDashboardData();
+    });
     _productSubscription = DatabaseHelper.instance.productStream.listen((_) {
-      if (mounted) {
-        print("Realtime Update: Produk berubah, reload dashboard...");
-        _loadDashboardData();
-      }
+      if (mounted) _loadDashboardData();
     });
-
-    _userSubscription = DatabaseHelper.instance.userStream.listen((
-      updatedUser,
-    ) {
+    _userSubscription = DatabaseHelper.instance.userStream.listen((updatedUser) {
       if (mounted && updatedUser.id == widget.user.id) {
-        print("Realtime Update: User berubah, update nama...");
-        setState(() {
-          _currentUser = updatedUser;
-        });
+        setState(() => _currentUser = updatedUser);
       }
     });
-
-    // NEW: Listen to income and expense changes
     _incomeSubscription = DatabaseHelper.instance.incomeStream.listen((_) {
-      if (mounted) {
-        print("Realtime Update: Income berubah, reload dashboard...");
-        _loadDashboardData();
-      }
+      if (mounted) _loadDashboardData();
     });
-
     _expenseSubscription = DatabaseHelper.instance.expenseStream.listen((_) {
-      if (mounted) {
-        print("Realtime Update: Expense berubah, reload dashboard...");
-        _loadDashboardData();
-      }
+      if (mounted) _loadDashboardData();
     });
   }
 
@@ -95,9 +72,7 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Future<void> _loadDashboardData() async {
-    if (_weeklyData.isEmpty) {
-      setState(() => _isLoading = true);
-    }
+    if (_weeklyData.isEmpty) setState(() => _isLoading = true);
 
     try {
       final transactions = await DatabaseHelper.instance.getAllTransactions();
@@ -106,47 +81,37 @@ class _HomeTabState extends State<HomeTab> {
       final expenses = await DatabaseHelper.instance.getAllExpenses();
 
       double totalRev = 0;
-      for (var transaction in transactions) {
-        totalRev += transaction.totalAmount;
+      for (var t in transactions) {
+        totalRev += t.totalAmount;
       }
-
       double totalInc = 0;
-      for (var income in incomes) {
-        totalInc += income.amount;
+      for (var i in incomes) {
+        totalInc += i.amount;
       }
-
       double totalExp = 0;
-      for (var expense in expenses) {
-        totalExp += expense.amount;
+      for (var e in expenses) {
+        totalExp += e.amount;
       }
 
-      // Hitung sisa saldo: (Revenue + Income) - Expense
-      double balance = (totalRev + totalInc) - totalExp;
-
-      final weeklyData = await _calculateWeeklyData(transactions);
+      final weeklyData = _calculateWeeklyData(transactions);
 
       if (mounted) {
         setState(() {
           _totalTransactions = transactions.length;
           _totalIncome = totalInc;
           _totalExpense = totalExp;
-          _remainingBalance = balance;
+          _remainingBalance = (totalRev + totalInc) - totalExp;
           _totalProducts = products.length;
           _weeklyData = weeklyData;
           _isLoading = false;
         });
       }
     } catch (e) {
-      print('Error loading dashboard data: $e');
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Future<List<Map<String, dynamic>>> _calculateWeeklyData(
-    List transactions,
-  ) async {
+  List<Map<String, dynamic>> _calculateWeeklyData(List transactions) {
     final now = DateTime.now();
     final List<Map<String, dynamic>> data = [];
 
@@ -172,17 +137,14 @@ class _HomeTabState extends State<HomeTab> {
         'count': dayTransactions.length,
       });
     }
-
     return data;
   }
 
   String _formatCurrency(double amount) {
-    return amount
-        .toStringAsFixed(0)
-        .replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]}.',
-        );
+    return amount.toStringAsFixed(0).replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]}.',
+    );
   }
 
   @override
@@ -194,7 +156,6 @@ class _HomeTabState extends State<HomeTab> {
         color: const Color(0xFF03D1C5),
         child: CustomScrollView(
           slivers: [
-            // Compact App Bar
             SliverAppBar(
               expandedHeight: 100,
               floating: false,
@@ -206,10 +167,7 @@ class _HomeTabState extends State<HomeTab> {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF03D1C5),
-                        Color(0xFF02A89E),
-                      ],
+                      colors: [Color(0xFF03D1C5), Color(0xFF02A89E)],
                     ),
                   ),
                   child: SafeArea(
@@ -223,11 +181,7 @@ class _HomeTabState extends State<HomeTab> {
                               color: Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(
-                              Icons.store_rounded,
-                              color: Colors.white,
-                              size: 24,
-                            ),
+                            child: const Icon(Icons.store_rounded, color: Colors.white, size: 24),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -237,19 +191,12 @@ class _HomeTabState extends State<HomeTab> {
                               children: [
                                 Text(
                                   'Selamat Datang,',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9),
-                                    fontSize: 13,
-                                  ),
+                                  style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   _currentUser.name,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -263,55 +210,26 @@ class _HomeTabState extends State<HomeTab> {
                 ),
               ),
             ),
-
-            // Content
             SliverToBoxAdapter(
               child: _isLoading
                   ? const Center(
                       child: Padding(
                         padding: EdgeInsets.all(40),
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF03D1C5),
-                        ),
+                        child: CircularProgressIndicator(color: Color(0xFF03D1C5)),
                       ),
                     )
                   : Column(
                       children: [
-                        const SizedBox(height: 20),
-
-                        // Sisa Saldo Card (Featured)
+                        const SizedBox(height: 16),
                         _buildBalanceCard(),
-
                         const SizedBox(height: 16),
-
-                        // Financial Summary Cards (Income, Expense, Revenue)
-                        _buildFinancialSummary(),
-
+                        _buildStatsGrid(),
                         const SizedBox(height: 16),
-
-                        // Statistics Cards
-                        _buildStatisticsCards(),
-
-                        const SizedBox(height: 16),
-
-                        // History Button
-                        _buildHistoryButton(context),
-
-                        const SizedBox(height: 16),
-
-                        // Financial Management Buttons
-                        _buildFinancialButtons(),
-
-                        const SizedBox(height: 16),
-
-                        // Weekly Chart
                         _buildWeeklyChart(),
-
                         const SizedBox(height: 16),
-
-                        // NEW: Financial Overview Chart
-                        _buildFinancialOverviewChart(),
-
+                        _buildQuickActions(),
+                        const SizedBox(height: 16),
+                        _buildFinancialChart(),
                         const SizedBox(height: 100),
                       ],
                     ),
@@ -322,7 +240,6 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  // NEW: Featured Balance Card
   Widget _buildBalanceCard() {
     final isNegative = _remainingBalance < 0;
     return Padding(
@@ -341,8 +258,7 @@ class _HomeTabState extends State<HomeTab> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: (isNegative ? Colors.red : const Color(0xFF03D1C5))
-                  .withOpacity(0.3),
+              color: (isNegative ? Colors.red : const Color(0xFF03D1C5)).withOpacity(0.3),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -360,9 +276,7 @@ class _HomeTabState extends State<HomeTab> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    isNegative
-                        ? Icons.warning_rounded
-                        : Icons.account_balance_wallet_rounded,
+                    isNegative ? Icons.warning_rounded : Icons.account_balance_wallet_rounded,
                     color: Colors.white,
                     size: 24,
                   ),
@@ -370,23 +284,14 @@ class _HomeTabState extends State<HomeTab> {
                 const SizedBox(width: 12),
                 Text(
                   'Sisa Saldo',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.95),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(color: Colors.white.withOpacity(0.95), fontSize: 16, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
             const SizedBox(height: 16),
             Text(
               'Rp ${_formatCurrency(_remainingBalance.abs())}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                letterSpacing: -0.5,
-              ),
+              style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: -0.5),
             ),
             if (isNegative) ...[
               const SizedBox(height: 8),
@@ -401,103 +306,75 @@ class _HomeTabState extends State<HomeTab> {
                   children: [
                     Icon(Icons.info_outline, color: Colors.white, size: 14),
                     SizedBox(width: 6),
-                    Text(
-                      'Saldo Minus',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    Text('Saldo Minus', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
                   ],
                 ),
               ),
             ],
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                _buildInlineStat(
+                  icon: Icons.arrow_downward_rounded,
+                  label: 'Masuk',
+                  value: 'Rp ${_formatCurrency(_totalIncome)}',
+                  color: Colors.greenAccent,
+                ),
+                const SizedBox(width: 16),
+                _buildInlineStat(
+                  icon: Icons.arrow_upward_rounded,
+                  label: 'Keluar',
+                  value: 'Rp ${_formatCurrency(_totalExpense)}',
+                  color: Colors.redAccent,
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  // NEW: Financial Summary (2 Cards)
-  Widget _buildFinancialSummary() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildCompactFinancialCard(
-              title: 'Uang Masuk',
-              value: _totalIncome,
-              icon: Icons.arrow_downward_rounded,
-              color: Colors.green,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _buildCompactFinancialCard(
-              title: 'Uang Keluar',
-              value: _totalExpense,
-              icon: Icons.arrow_upward_rounded,
-              color: Colors.red,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCompactFinancialCard({
-    required String title,
-    required double value,
+  Widget _buildInlineStat({
     required IconData icon,
+    required String label,
+    required String value,
     required Color color,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 11,
-              color: Colors.black87,
-              fontWeight: FontWeight.w600,
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: color, size: 16),
+                const SizedBox(width: 4),
+                Text(label, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
+              ],
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              'Rp ${_formatCurrency(value)}',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: color,
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                maxLines: 1,
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildStatisticsCards() {
+  Widget _buildStatsGrid() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
@@ -524,148 +401,6 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  Widget _buildHistoryButton(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const HistoryScreen()),
-            );
-          },
-          icon: const Icon(Icons.history_rounded, color: Colors.white),
-          label: const Text(
-            'Lihat Riwayat Transaksi',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              fontSize: 16,
-            ),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF03D1C5),
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            elevation: 2,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFinancialButtons() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _buildFinancialButton(
-                  label: 'Uang Masuk',
-                  icon: Icons.add_circle_rounded,
-                  color: Colors.green,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const IncomeScreen()),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildFinancialButton(
-                  label: 'Uang Keluar',
-                  icon: Icons.remove_circle_rounded,
-                  color: Colors.red,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ExpenseScreen()),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: _buildFinancialButton(
-              label: 'Laporan Keuangan',
-              icon: Icons.assessment_rounded,
-              color: Colors.blue,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const FinancialReportScreen()),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFinancialButton({
-    required String label,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withOpacity(0.3)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                label,
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildStatCard({
     required String title,
     required String value,
@@ -678,11 +413,7 @@ class _HomeTabState extends State<HomeTab> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -697,23 +428,9 @@ class _HomeTabState extends State<HomeTab> {
             child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(height: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 13,
-              color: Colors.black87,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          Text(title, style: const TextStyle(fontSize: 13, color: Colors.black87, fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
+          Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
         ],
       ),
     );
@@ -722,9 +439,7 @@ class _HomeTabState extends State<HomeTab> {
   Widget _buildWeeklyChart() {
     if (_weeklyData.isEmpty) return const SizedBox();
 
-    final maxAmount = _weeklyData
-        .map((d) => d['amount'] as double)
-        .reduce((a, b) => a > b ? a : b);
+    final maxAmount = _weeklyData.map((d) => d['amount'] as double).reduce((a, b) => a > b ? a : b);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -734,11 +449,7 @@ class _HomeTabState extends State<HomeTab> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2)),
           ],
         ),
         child: Column(
@@ -747,43 +458,27 @@ class _HomeTabState extends State<HomeTab> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Penjualan 7 Hari Terakhir',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                const Text('Penjualan 7 Hari Terakhir', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFF03D1C5).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text(
-                    'Minggu ini',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF03D1C5),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: const Text('Minggu ini', style: TextStyle(fontSize: 11, color: Color(0xFF03D1C5), fontWeight: FontWeight.w600)),
                 ),
               ],
             ),
             const SizedBox(height: 20),
             SizedBox(
-              height: 160,
+              height: 180,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: _weeklyData.map((data) {
                   final amount = data['amount'] as double;
                   final count = data['count'] as int;
-                  final height = maxAmount > 0 ? (amount / maxAmount) * 110 : 0.0;
+                  final height = maxAmount > 0 ? (amount / maxAmount) * 120 : 0.0;
 
                   return Expanded(
                     child: Padding(
@@ -793,12 +488,8 @@ class _HomeTabState extends State<HomeTab> {
                         children: [
                           if (count > 0)
                             Text(
-                              '$count',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.w600,
-                              ),
+                              count.toString(),
+                              style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w600),
                             ),
                           if (count > 0) const SizedBox(height: 4),
                           Container(
@@ -813,17 +504,13 @@ class _HomeTabState extends State<HomeTab> {
                                   const Color(0xFF03D1C5).withOpacity(0.6),
                                 ],
                               ),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
                             ),
                           ),
                           const SizedBox(height: 6),
                           Text(
                             data['day'],
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.grey[700],
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: TextStyle(fontSize: 10, color: Colors.grey[700], fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
@@ -838,10 +525,97 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  // NEW: Financial Overview Chart
-  Widget _buildFinancialOverviewChart() {
-    final totalAmount = _totalIncome + _totalExpense;
-    
+  Widget _buildQuickActions() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen()));
+              },
+              icon: const Icon(Icons.history_rounded, color: Colors.white),
+              label: const Text('Lihat Riwayat Transaksi', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF03D1C5),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 2,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionButton(
+                  label: 'Uang Masuk',
+                  icon: Icons.add_circle_rounded,
+                  color: Colors.green,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const IncomeScreen())),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildActionButton(
+                  label: 'Uang Keluar',
+                  icon: Icons.remove_circle_rounded,
+                  color: Colors.red,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ExpenseScreen())),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildActionButton(
+                  label: 'Laporan',
+                  icon: Icons.assessment_rounded,
+                  color: Colors.blue,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FinancialReportScreen())),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withOpacity(0.3)),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2)),
+            ],
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: color, size: 22),
+              const SizedBox(height: 6),
+              Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFinancialChart() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
@@ -850,36 +624,21 @@ class _HomeTabState extends State<HomeTab> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2)),
           ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Laporan Keuangan',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            const Text('Laporan Keuangan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 24),
-            
-            // Pie Chart
-            if (totalAmount > 0)
+            if (_totalIncome + _totalExpense > 0)
               Center(
                 child: SizedBox(
                   height: 200,
                   width: 200,
                   child: CustomPaint(
-                    painter: PieChartPainter(
-                      income: _totalIncome,
-                      expense: _totalExpense,
-                    ),
+                    painter: _DonutChartPainter(income: _totalIncome, expense: _totalExpense),
                   ),
                 ),
               )
@@ -889,25 +648,19 @@ class _HomeTabState extends State<HomeTab> {
                   children: [
                     Icon(Icons.pie_chart_outline, size: 80, color: Colors.grey[300]),
                     const SizedBox(height: 12),
-                    Text(
-                      'Belum ada data',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 14),
-                    ),
+                    Text('Belum ada data', style: TextStyle(color: Colors.grey[500], fontSize: 14)),
                   ],
                 ),
               ),
-            
             const SizedBox(height: 24),
-            
-            // Legends
-            _buildLegendItem(
+            _buildLegend(
               label: 'Uang Masuk',
               amount: _totalIncome,
               color: Colors.green,
               icon: Icons.arrow_downward_rounded,
             ),
             const SizedBox(height: 12),
-            _buildLegendItem(
+            _buildLegend(
               label: 'Uang Keluar',
               amount: _totalExpense,
               color: Colors.red,
@@ -919,56 +672,27 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  Widget _buildLegendItem({
+  Widget _buildLegend({
     required String label,
     required double amount,
     required Color color,
     required IconData icon,
   }) {
-    final totalAmount = _totalIncome + _totalExpense;
-    final percentage = totalAmount > 0 ? (amount / totalAmount * 100) : 0.0;
-    
+    final total = _totalIncome + _totalExpense;
+    final pct = total > 0 ? (amount / total * 100) : 0.0;
+
     return Row(
       children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
+        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 12),
         Icon(icon, size: 16, color: color),
         const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey[800],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
+        Expanded(child: Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[800], fontWeight: FontWeight.w500))),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(
-              'Rp ${_formatCurrency(amount)}',
-              style: TextStyle(
-                fontSize: 13,
-                color: color,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              '${percentage.toStringAsFixed(1)}%',
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.grey[600],
-              ),
-            ),
+            Text('Rp ${_formatCurrency(amount)}', style: TextStyle(fontSize: 13, color: color, fontWeight: FontWeight.bold)),
+            Text('${pct.toStringAsFixed(1)}%', style: TextStyle(fontSize: 10, color: Colors.grey[600])),
           ],
         ),
       ],
@@ -976,60 +700,39 @@ class _HomeTabState extends State<HomeTab> {
   }
 }
 
-// Custom Pie Chart Painter
-class PieChartPainter extends CustomPainter {
+class _DonutChartPainter extends CustomPainter {
   final double income;
   final double expense;
 
-  PieChartPainter({
-    required this.income,
-    required this.expense,
-  });
+  _DonutChartPainter({required this.income, required this.expense});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
     final total = income + expense;
-
     if (total == 0) return;
 
-    double startAngle = -90 * 3.14159 / 180; // Start from top
+    double startAngle = -pi / 2;
 
-    // Income slice (Green)
-    final incomeAngle = (income / total) * 2 * 3.14159;
+    final incomeAngle = (income / total) * 2 * pi;
     final incomePaint = Paint()
       ..color = Colors.green
       ..style = PaintingStyle.fill;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      startAngle,
-      incomeAngle,
-      true,
-      incomePaint,
-    );
+    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), startAngle, incomeAngle, true, incomePaint);
     startAngle += incomeAngle;
 
-    // Expense slice (Red)
-    final expenseAngle = (expense / total) * 2 * 3.14159;
+    final expenseAngle = (expense / total) * 2 * pi;
     final expensePaint = Paint()
       ..color = Colors.red
       ..style = PaintingStyle.fill;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      startAngle,
-      expenseAngle,
-      true,
-      expensePaint,
-    );
+    canvas.drawArc(Rect.fromCircle(center: center, radius: radius), startAngle, expenseAngle, true, expensePaint);
 
-    // White circle in center (donut effect)
     final centerPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius * 0.5, centerPaint);
 
-    // Border for donut
     final borderPaint = Paint()
       ..color = Colors.grey[200]!
       ..style = PaintingStyle.stroke

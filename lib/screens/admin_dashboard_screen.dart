@@ -4,19 +4,18 @@ import 'home_tab.dart';
 import 'products_tab.dart';
 import 'transaction_tab.dart';
 import 'profile_tab.dart';
-// Hapus import HistoryScreen jika tidak terpakai lagi di file ini
-// import '../screens/history_screen.dart'; 
+import 'cashier_management_screen.dart';
 
-class DashboardScreen extends StatefulWidget {
+class AdminDashboardScreen extends StatefulWidget {
   final User user;
 
-  const DashboardScreen({super.key, required this.user});
+  const AdminDashboardScreen({super.key, required this.user});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   int _currentIndex = 0;
 
   late final List<Widget> _pages;
@@ -28,6 +27,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       HomeTab(user: widget.user),
       const ProductsTab(),
       TransactionTab(user: widget.user),
+      const CashierManagementScreen(),
       ProfileTab(user: widget.user),
     ];
   }
@@ -80,6 +80,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               label: 'Transaksi',
             ),
             BottomNavigationBarItem(
+              icon: Icon(Icons.people_outline_rounded),
+              activeIcon: Icon(Icons.people_rounded, size: 28),
+              label: 'Kasir',
+            ),
+            BottomNavigationBarItem(
               icon: Icon(Icons.person_outline_rounded),
               activeIcon: Icon(Icons.person_rounded, size: 28),
               label: 'Profile',
@@ -87,10 +92,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       ),
-      // --- BAGIAN INI SUDAH DIHAPUS ---
-      // floatingActionButton: FloatingActionButton.extended(...)
-      // floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      // ---------------------------------
     );
   }
 }

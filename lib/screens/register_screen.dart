@@ -78,10 +78,19 @@ class _RegisterScreenState extends State<RegisterScreen>
         return;
       }
 
-      final newUser = User(name: name, password: password, createdAt: DateTime.now());
+      final hasUsers = await DatabaseHelper.instance.hasUsers();
+      final role = hasUsers ? 'kasir' : 'admin';
+
+      final newUser = User(
+        name: name,
+        password: password,
+        role: role,
+        createdAt: DateTime.now(),
+      );
       await DatabaseHelper.instance.createUser(newUser);
       
-      _showSnackBar('Registrasi berhasil!', Colors.green);
+      final roleLabel = role == 'admin' ? 'Admin' : 'Kasir';
+      _showSnackBar('Registrasi berhasil sebagai $roleLabel!', Colors.green);
 
       Future.delayed(const Duration(seconds: 1), () {
         if (mounted) {
@@ -185,7 +194,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                 const SizedBox(height: 8),
 
                 Text(
-                  'Isi data untuk membuat akun',
+                  'Buat akun admin pertama Anda',
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.8),
                     fontSize: 14,
