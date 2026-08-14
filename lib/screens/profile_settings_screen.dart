@@ -92,7 +92,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               const SizedBox(height: 16),
               _buildTextField(
                 controller: cashierCtrl,
-                label: 'Nama Petugas / Kasir',
+                label: 'Nama Admin / Username',
                 icon: Icons.person,
                 helper: 'Mengubah nama akun & nama di struk',
               ),
@@ -256,7 +256,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         const SizedBox(height: 12),
                         _InfoCard(
                           icon: Icons.person,
-                          title: 'Nama Petugas',
+                          title: 'Nama Admin/Username',
                           value: _cashierName,
                           color: Colors.blue,
                         ),

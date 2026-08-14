@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../database/database_helper.dart';
 import '../models/user_model.dart';
 import 'login_screen.dart';
@@ -14,11 +13,11 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen>
     with SingleTickerProviderStateMixin {
   final _nameController = TextEditingController();
-  final _pinController = TextEditingController();
-  final _confirmPinController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
-  bool _isPinVisible = false;
-  bool _isConfirmPinVisible = false;
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
 
   late AnimationController _fadeController;
@@ -40,46 +39,46 @@ class _RegisterScreenState extends State<RegisterScreen>
   @override
   void dispose() {
     _nameController.dispose();
-    _pinController.dispose();
-    _confirmPinController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
 
   Future<void> _handleRegister() async {
     final name = _nameController.text.trim();
-    final pin = _pinController.text;
-    final confirmPin = _confirmPinController.text;
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
 
-    if (name.isEmpty || pin.isEmpty || confirmPin.isEmpty) {
+    if (name.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       _showSnackBar('Semua data harus diisi!', Colors.red);
       return;
     }
 
-    if (pin.length != 6) {
-      _showSnackBar('PIN harus 6 digit!', Colors.red);
+    if (password.length < 6) {
+      _showSnackBar('Password minimal 6 karakter!', Colors.red);
       return;
     }
 
-    if (pin != confirmPin) {
-      _showSnackBar('PIN tidak cocok!', Colors.red);
+    if (password != confirmPassword) {
+      _showSnackBar('Password tidak cocok!', Colors.red);
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      final isTaken = await DatabaseHelper.instance.isPinTaken(pin);
+      final isTaken = await DatabaseHelper.instance.isNameTaken(name);
       if (isTaken) {
         _showSnackBar(
-          'PIN ini sudah digunakan, pilih PIN berbeda!',
+          'Username ini sudah digunakan, pilih username berbeda!',
           Colors.red,
         );
         setState(() => _isLoading = false);
         return;
       }
 
-      final newUser = User(name: name, pin: pin, createdAt: DateTime.now());
+      final newUser = User(name: name, password: password, createdAt: DateTime.now());
       await DatabaseHelper.instance.createUser(newUser);
       
       _showSnackBar('Registrasi berhasil!', Colors.green);
@@ -115,8 +114,6 @@ class _RegisterScreenState extends State<RegisterScreen>
     bool obscureText = false,
     bool? isVisible,
     VoidCallback? onVisibilityToggle,
-    List<TextInputFormatter>? inputFormatters,
-    TextInputType? keyboardType,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -126,11 +123,8 @@ class _RegisterScreenState extends State<RegisterScreen>
       child: TextField(
         controller: controller,
         obscureText: obscureText && (isVisible != null ? !isVisible : true),
-        keyboardType: keyboardType,
-        inputFormatters: inputFormatters,
         style: TextStyle(
           color: Colors.white,
-          letterSpacing: obscureText ? 3 : 0,
           fontSize: 16,
         ),
         decoration: InputDecoration(
@@ -164,7 +158,7 @@ class _RegisterScreenState extends State<RegisterScreen>
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
             child: Column(
               children: [
-                      Container(
+                Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
@@ -179,7 +173,6 @@ class _RegisterScreenState extends State<RegisterScreen>
 
                 const SizedBox(height: 20),
 
-                // Title
                 const Text(
                   'Buat Akun Baru',
                   style: TextStyle(
@@ -214,120 +207,110 @@ class _RegisterScreenState extends State<RegisterScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Name Field
+                      // Username Field
                       const Text(
-                      'Nama Petugas',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildTextField(
-                      controller: _nameController,
-                      hint: 'Masukkan nama panggilan',
-                      icon: Icons.badge_outlined,
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // PIN Field
-                    const Text(
-                      'Buat PIN (6 Angka)',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildTextField(
-                      controller: _pinController,
-                      hint: '••••••',
-                      icon: Icons.lock_outline,
-                      obscureText: true,
-                      isVisible: _isPinVisible,
-                      onVisibilityToggle: () =>
-                          setState(() => _isPinVisible = !_isPinVisible),
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(6),
-                      ],
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // Confirm PIN
-                    const Text(
-                      'Konfirmasi PIN',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildTextField(
-                      controller: _confirmPinController,
-                      hint: '••••••',
-                      icon: Icons.lock_clock_outlined,
-                      obscureText: true,
-                      isVisible: _isConfirmPinVisible,
-                      onVisibilityToggle: () => setState(
-                        () => _isConfirmPinVisible = !_isConfirmPinVisible,
-                      ),
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(6),
-                      ],
-                    ),
-
-                    const SizedBox(height: 28),
-
-                    // Register Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 54,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _handleRegister,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF03D1C5),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          elevation: 0,
+                        'Username',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
                         ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 3,
-                                  color: Color(0xFF03D1C5),
-                                ),
-                              )
-                            : const Text(
-                                'DAFTAR',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1,
-                                ),
-                              ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
+                      const SizedBox(height: 8),
+                      _buildTextField(
+                        controller: _nameController,
+                        hint: 'Masukkan username',
+                        icon: Icons.person_outline,
+                      ),
 
-              const SizedBox(height: 40),
-            ],
+                      const SizedBox(height: 20),
+
+                      // Password Field
+                      const Text(
+                        'Password (min. 6 karakter)',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildTextField(
+                        controller: _passwordController,
+                        hint: 'Masukkan password',
+                        icon: Icons.lock_outline,
+                        obscureText: true,
+                        isVisible: _isPasswordVisible,
+                        onVisibilityToggle: () =>
+                            setState(() => _isPasswordVisible = !_isPasswordVisible),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Confirm Password
+                      const Text(
+                        'Konfirmasi Password',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildTextField(
+                        controller: _confirmPasswordController,
+                        hint: 'Ulangi password',
+                        icon: Icons.lock_clock_outlined,
+                        obscureText: true,
+                        isVisible: _isConfirmPasswordVisible,
+                        onVisibilityToggle: () => setState(
+                          () => _isConfirmPasswordVisible = !_isConfirmPasswordVisible,
+                        ),
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      // Register Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 54,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _handleRegister,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF03D1C5),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 3,
+                                    color: Color(0xFF03D1C5),
+                                  ),
+                                )
+                              : const Text(
+                                  'DAFTAR',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
-        ),
         ),
       ),
     );

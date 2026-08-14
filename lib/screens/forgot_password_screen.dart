@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../database/database_helper.dart';
@@ -13,7 +14,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     with SingleTickerProviderStateMixin {
   final _nameController = TextEditingController();
   bool _isLoading = false;
-  String? _newPin;
+  String? _newPassword;
 
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
@@ -41,16 +42,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     super.dispose();
   }
 
-  String _generateRandomPin() {
-    final random = DateTime.now().millisecondsSinceEpoch;
-    return (random % 900000 + 100000).toString();
+  String _generateRandomPassword() {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    final random = Random.secure();
+    return List.generate(8, (_) => chars[random.nextInt(chars.length)]).join();
   }
 
-  Future<void> _handleResetPin() async {
+  Future<void> _handleResetPassword() async {
     final name = _nameController.text.trim();
 
     if (name.isEmpty) {
-      _showSnackBar('Nama harus diisi!', Colors.red[600]!);
+      _showSnackBar('Username harus diisi!', Colors.red[600]!);
       return;
     }
 
@@ -60,26 +62,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       final user = await DatabaseHelper.instance.getUserByName(name);
 
       if (user == null) {
-        _showSnackBar('Nama user tidak ditemukan!', Colors.red[600]!);
+        _showSnackBar('Username tidak ditemukan!', Colors.red[600]!);
         setState(() => _isLoading = false);
         return;
       }
 
-      String newPin = _generateRandomPin();
-      
-      // Pastikan PIN unik
-      while (await DatabaseHelper.instance.isPinTaken(newPin)) {
-        newPin = _generateRandomPin();
-      }
+      final newPassword = _generateRandomPassword();
 
-      await DatabaseHelper.instance.updatePin(name, newPin);
+      await DatabaseHelper.instance.updatePassword(name, newPassword);
 
       setState(() {
-        _newPin = newPin;
+        _newPassword = newPassword;
         _isLoading = false;
       });
 
-      _showSnackBar('PIN berhasil direset!', Colors.green[600]!);
+      _showSnackBar('Password berhasil direset!', Colors.green[600]!);
     } catch (e) {
       _showSnackBar('Terjadi kesalahan: $e', Colors.red[600]!);
       setState(() => _isLoading = false);
@@ -88,7 +85,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
   void _copyToClipboard(String text) {
     Clipboard.setData(ClipboardData(text: text));
-    _showSnackBar('PIN berhasil disalin!', Colors.blue[600]!);
+    _showSnackBar('Password berhasil disalin!', Colors.blue[600]!);
   }
 
   void _showSnackBar(String message, Color color) {
@@ -140,7 +137,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                         children: [
                           const SizedBox(height: 20),
                           
-                          // Icon
                           const Icon(
                             Icons.lock_reset_rounded,
                             size: 80,
@@ -150,7 +146,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                           const SizedBox(height: 30),
                           
                           const Text(
-                            'Lupa PIN?',
+                            'Lupa Password?',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 32,
@@ -161,7 +157,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                           const SizedBox(height: 8),
                           
                           Text(
-                            'Masukkan nama Anda untuk reset PIN',
+                            'Masukkan username Anda untuk reset password',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.9),
@@ -181,7 +177,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                                 color: Colors.white.withOpacity(0.3),
                               ),
                             ),
-                            child: _newPin == null
+                            child: _newPassword == null
                                 ? _buildResetForm()
                                 : _buildResultDisplay(),
                           ),
@@ -203,7 +199,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Nama Terdaftar',
+          'Username Terdaftar',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
@@ -222,7 +218,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             controller: _nameController,
             style: const TextStyle(color: Colors.white),
             decoration: const InputDecoration(
-              hintText: 'Masukkan nama',
+              hintText: 'Masukkan username',
               hintStyle: TextStyle(color: Colors.white54),
               prefixIcon: Icon(
                 Icons.person_outline_rounded,
@@ -231,7 +227,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               border: InputBorder.none,
               contentPadding: EdgeInsets.all(16),
             ),
-            onSubmitted: (_) => _handleResetPin(),
+            onSubmitted: (_) => _handleResetPassword(),
           ),
         ),
         
@@ -241,7 +237,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
           width: double.infinity,
           height: 56,
           child: ElevatedButton(
-            onPressed: _isLoading ? null : _handleResetPin,
+            onPressed: _isLoading ? null : _handleResetPassword,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: const Color(0xFF03D1C5),
@@ -260,7 +256,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                     ),
                   )
                 : const Text(
-                    'RESET PIN',
+                    'RESET PASSWORD',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -285,7 +281,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
         const SizedBox(height: 20),
         
         const Text(
-          'PIN Baru Anda',
+          'Password Baru Anda',
           style: TextStyle(
             color: Colors.white,
             fontSize: 20,
@@ -305,17 +301,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                _newPin!,
+                _newPassword!,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 32,
-                  letterSpacing: 5,
+                  fontSize: 24,
+                  letterSpacing: 2,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               IconButton(
                 icon: const Icon(Icons.copy_rounded, color: Colors.white),
-                onPressed: () => _copyToClipboard(_newPin!),
+                onPressed: () => _copyToClipboard(_newPassword!),
               ),
             ],
           ),

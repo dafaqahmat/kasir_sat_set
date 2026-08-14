@@ -1,13 +1,13 @@
 class User {
   final int? id;
-  final String name; // Mengganti username
-  final String pin; // Mengganti password
+  final String name;
+  final String password;
   final DateTime createdAt;
 
   User({
     this.id,
     required this.name,
-    required this.pin,
+    required this.password,
     required this.createdAt,
   });
 
@@ -15,7 +15,7 @@ class User {
     return {
       'id': id,
       'name': name,
-      'pin': pin,
+      'password': password,
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -24,16 +24,16 @@ class User {
     return User(
       id: map['id'],
       name: map['name'],
-      pin: map['pin'],
+      password: map['password'],
       createdAt: DateTime.parse(map['created_at']),
     );
   }
 
-  User copyWith({int? id, String? name, String? pin, DateTime? createdAt}) {
+  User copyWith({int? id, String? name, String? password, DateTime? createdAt}) {
     return User(
       id: id ?? this.id,
       name: name ?? this.name,
-      pin: pin ?? this.pin,
+      password: password ?? this.password,
       createdAt: createdAt ?? this.createdAt,
     );
   }

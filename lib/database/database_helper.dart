@@ -52,19 +52,19 @@ class DatabaseHelper {
 
     return await sql.openDatabase(
       path,
-      version: 9, // Paksa migrasi harga_beli sekali lagi
+      version: 10,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
   }
 
   Future _createDB(sql.Database db, int version) async {
-    // Users table (Diubah: name & pin)
+    // Users table
     await db.execute('''
       CREATE TABLE users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
-        pin TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
         created_at TEXT NOT NULL
       )
     ''');
@@ -160,7 +160,6 @@ class DatabaseHelper {
     }
 
     if (oldVersion < 3) {
-      // Reset users table jika upgrade dari versi lama
       await db.execute('DROP TABLE IF EXISTS users');
       await db.execute('''
       CREATE TABLE users (
@@ -172,7 +171,6 @@ class DatabaseHelper {
     ''');
     }
 
-    // TAMBAHKAN INI: Buat tabel income dan expense untuk versi 4
     if (oldVersion < 4) {
       await db.execute('''
       CREATE TABLE incomes (
@@ -200,9 +198,21 @@ class DatabaseHelper {
     if (oldVersion < 6) {
       await db.execute('ALTER TABLE products ADD COLUMN stock INTEGER DEFAULT 0');
     }
+
+    if (oldVersion < 10) {
+      await db.execute('DROP TABLE IF EXISTS users');
+      await db.execute('''
+      CREATE TABLE users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        password TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    }
   }
 
-  // ========== USER METHODS (UPDATED) ==========
+  // ========== USER METHODS ==========
 
   // Create User (Register)
   Future<User> createUser(User user) async {
@@ -216,10 +226,14 @@ class DatabaseHelper {
     }
   }
 
-  // Login hanya menggunakan PIN
-  Future<User?> loginByPin(String pin) async {
+  // Login menggunakan username dan password
+  Future<User?> loginByUsernameAndPassword(String username, String password) async {
     final db = await instance.database;
-    final result = await db.query('users', where: 'pin = ?', whereArgs: [pin]);
+    final result = await db.query(
+      'users',
+      where: 'name = ? AND password = ?',
+      whereArgs: [username, password],
+    );
 
     if (result.isNotEmpty) {
       return User.fromMap(result.first);
@@ -227,14 +241,14 @@ class DatabaseHelper {
     return null;
   }
 
-  // Cek apakah PIN sudah dipakai (saat register)
-  Future<bool> isPinTaken(String pin) async {
+  // Cek apakah nama sudah dipakai (saat register)
+  Future<bool> isNameTaken(String name) async {
     final db = await instance.database;
-    final result = await db.query('users', where: 'pin = ?', whereArgs: [pin]);
+    final result = await db.query('users', where: 'name = ?', whereArgs: [name]);
     return result.isNotEmpty;
   }
 
-  // Cari user berdasarkan Nama (untuk reset PIN)
+  // Cari user berdasarkan Nama (untuk reset password)
   Future<User?> getUserByName(String name) async {
     final db = await instance.database;
     final result = await db.query(
@@ -249,12 +263,12 @@ class DatabaseHelper {
     return null;
   }
 
-  // Update PIN (Reset PIN)
-  Future<int> updatePin(String name, String newPin) async {
+  // Update Password
+  Future<int> updatePassword(String name, String newPassword) async {
     final db = await instance.database;
     return await db.update(
       'users',
-      {'pin': newPin},
+      {'password': newPassword},
       where: 'name = ?',
       whereArgs: [name],
     );

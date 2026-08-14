@@ -43,21 +43,21 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
-  void _showChangePinDialog() {
-    final oldPin = TextEditingController();
-    final newPin = TextEditingController();
-    final confirmPin = TextEditingController();
+  void _showChangePasswordDialog() {
+    final oldPassword = TextEditingController();
+    final newPassword = TextEditingController();
+    final confirmPassword = TextEditingController();
 
     showDialog(
       context: context,
-      builder: (context) => _PinDialog(
-        oldPin: oldPin,
-        newPin: newPin,
-        confirmPin: confirmPin,
-        currentPin: _currentUser.pin,
+      builder: (context) => _PasswordDialog(
+        oldPassword: oldPassword,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword,
+        currentPassword: _currentUser.password,
         userName: _currentUser.name,
         onSuccess: () {
-          _showSnackBar('PIN berhasil diubah! Silakan login ulang.', Colors.green);
+          _showSnackBar('Password berhasil diubah! Silakan login ulang.', Colors.green);
           Future.delayed(const Duration(seconds: 2), _showLogoutDialog);
         },
         onError: (msg) => _showSnackBar(msg, Colors.red),
@@ -211,9 +211,9 @@ class _ProfileTabState extends State<ProfileTab> {
                         ),
                         _MenuItem(
                           icon: Icons.lock_outline_rounded,
-                          title: 'Ubah PIN',
+                          title: 'Ubah Password',
                           color: const Color(0xFF03D1C5),
-                          onTap: _showChangePinDialog,
+                          onTap: _showChangePasswordDialog,
                         ),
                         _MenuItem(
                           icon: Icons.info_outline_rounded,
@@ -318,36 +318,36 @@ class _MenuItem extends StatelessWidget {
   }
 }
 
-// Extracted PIN Dialog Widget
-class _PinDialog extends StatefulWidget {
-  final TextEditingController oldPin;
-  final TextEditingController newPin;
-  final TextEditingController confirmPin;
-  final String currentPin;
+// Extracted Password Dialog Widget
+class _PasswordDialog extends StatefulWidget {
+  final TextEditingController oldPassword;
+  final TextEditingController newPassword;
+  final TextEditingController confirmPassword;
+  final String currentPassword;
   final String userName;
   final VoidCallback onSuccess;
   final Function(String) onError;
 
-  const _PinDialog({
-    required this.oldPin,
-    required this.newPin,
-    required this.confirmPin,
-    required this.currentPin,
+  const _PasswordDialog({
+    required this.oldPassword,
+    required this.newPassword,
+    required this.confirmPassword,
+    required this.currentPassword,
     required this.userName,
     required this.onSuccess,
     required this.onError,
   });
 
   @override
-  State<_PinDialog> createState() => _PinDialogState();
+  State<_PasswordDialog> createState() => _PasswordDialogState();
 }
 
-class _PinDialogState extends State<_PinDialog> {
+class _PasswordDialogState extends State<_PasswordDialog> {
   bool _showOld = false;
   bool _showNew = false;
   bool _showConfirm = false;
 
-  Widget _buildPinField({
+  Widget _buildPasswordField({
     required TextEditingController controller,
     required String label,
     required bool obscure,
@@ -356,11 +356,8 @@ class _PinDialogState extends State<_PinDialog> {
     return TextField(
       controller: controller,
       obscureText: obscure,
-      keyboardType: TextInputType.number,
-      maxLength: 6,
       decoration: InputDecoration(
         labelText: label,
-        counterText: '',
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF03D1C5)),
         suffixIcon: IconButton(
@@ -377,29 +374,29 @@ class _PinDialogState extends State<_PinDialog> {
   }
 
   Future<void> _handleSave() async {
-    final old = widget.oldPin.text;
-    final newP = widget.newPin.text;
-    final confirm = widget.confirmPin.text;
+    final old = widget.oldPassword.text;
+    final newP = widget.newPassword.text;
+    final confirm = widget.confirmPassword.text;
 
     if (old.isEmpty || newP.isEmpty || confirm.isEmpty) {
       widget.onError('Semua field harus diisi!');
       return;
     }
     if (newP != confirm) {
-      widget.onError('PIN baru tidak cocok!');
+      widget.onError('Password baru tidak cocok!');
       return;
     }
-    if (newP.length != 6) {
-      widget.onError('PIN harus 6 angka!');
+    if (newP.length < 6) {
+      widget.onError('Password minimal 6 karakter!');
       return;
     }
-    if (old != widget.currentPin) {
-      widget.onError('PIN lama salah!');
+    if (old != widget.currentPassword) {
+      widget.onError('Password lama salah!');
       return;
     }
 
     try {
-      await DatabaseHelper.instance.updatePin(widget.userName, newP);
+      await DatabaseHelper.instance.updatePassword(widget.userName, newP);
       if (mounted) Navigator.pop(context);
       widget.onSuccess();
     } catch (e) {
@@ -412,30 +409,30 @@ class _PinDialogState extends State<_PinDialog> {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: const Text(
-        'Ubah PIN',
+        'Ubah Password',
         style: TextStyle(fontWeight: FontWeight.bold),
       ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildPinField(
-              controller: widget.oldPin,
-              label: 'PIN Lama',
+            _buildPasswordField(
+              controller: widget.oldPassword,
+              label: 'Password Lama',
               obscure: !_showOld,
               onToggle: () => setState(() => _showOld = !_showOld),
             ),
             const SizedBox(height: 16),
-            _buildPinField(
-              controller: widget.newPin,
-              label: 'PIN Baru (6 Angka)',
+            _buildPasswordField(
+              controller: widget.newPassword,
+              label: 'Password Baru (min. 6 karakter)',
               obscure: !_showNew,
               onToggle: () => setState(() => _showNew = !_showNew),
             ),
             const SizedBox(height: 16),
-            _buildPinField(
-              controller: widget.confirmPin,
-              label: 'Konfirmasi PIN Baru',
+            _buildPasswordField(
+              controller: widget.confirmPassword,
+              label: 'Konfirmasi Password Baru',
               obscure: !_showConfirm,
               onToggle: () => setState(() => _showConfirm = !_showConfirm),
             ),

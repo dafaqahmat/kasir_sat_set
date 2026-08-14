@@ -13,8 +13,10 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
-  String _pin = '';
-  final int _pinLength = 6;
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isPasswordVisible = false;
+  bool _isLoading = false;
 
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
@@ -22,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
-    
+
     _controller = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -37,38 +39,27 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
     _controller.dispose();
     super.dispose();
   }
 
-  void _onNumberTap(String number) {
-    if (_pin.length < _pinLength) {
-      setState(() => _pin += number);
-      
-      if (_pin.length == _pinLength) {
-        _handleLogin();
-      }
-    }
-  }
-
-  void _onDeleteTap() {
-    if (_pin.isNotEmpty) {
-      setState(() => _pin = _pin.substring(0, _pin.length - 1));
-    }
-  }
-
-  void _onClearTap() {
-    setState(() => _pin = '');
-  }
-
   Future<void> _handleLogin() async {
-    if (_pin.length != _pinLength) return;
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text;
 
+    if (username.isEmpty || password.isEmpty) {
+      _showSnackBar('Username dan password harus diisi!', Colors.red);
+      return;
+    }
+
+    setState(() => _isLoading = true);
 
     try {
       await Future.delayed(const Duration(milliseconds: 300));
-      
-      final user = await DatabaseHelper.instance.loginByPin(_pin);
+
+      final user = await DatabaseHelper.instance.loginByUsernameAndPassword(username, password);
 
       if (user != null) {
         final prefs = await SharedPreferences.getInstance();
@@ -80,16 +71,12 @@ class _LoginScreenState extends State<LoginScreen>
           );
         }
       } else {
-        _showSnackBar('PIN salah atau tidak terdaftar!', Colors.red);
-        setState(() {
-          _pin = '';
-        });
+        _showSnackBar('Username atau password salah!', Colors.red);
       }
     } catch (e) {
       _showSnackBar('Terjadi kesalahan: $e', Colors.red);
-      setState(() {
-        _pin = '';
-      });
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -112,208 +99,216 @@ class _LoginScreenState extends State<LoginScreen>
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
-          child: Column(
-            children: [
-              const Spacer(flex: 2),
-              
-              // Logo & Title
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(25),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.lock_open_rounded,
-                  size: 40,
-                  color: Color(0xFF03D1C5),
-                ),
-              ),
-              
-              const SizedBox(height: 24),
-              
-              const Text(
-                'Masukkan PIN',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              
-              const SizedBox(height: 8),
-              
-              Text(
-                'PIN 6 digit untuk login',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
-                  fontSize: 14,
-                ),
-              ),
-              
-              const SizedBox(height: 40),
-              
-              // PIN Dots Display
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  _pinLength,
-                  (index) => Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: index < _pin.length
-                          ? Colors.white
-                          : Colors.white.withOpacity(0.3),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.5),
-                        width: 2,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              children: [
+                const SizedBox(height: 80),
+
+                // Logo
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
                       ),
-                    ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.lock_open_rounded,
+                    size: 40,
+                    color: Color(0xFF03D1C5),
                   ),
                 ),
-              ),
-              
-              const Spacer(flex: 1),
-              
-              // Number Pad
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(40),
+
+                const SizedBox(height: 24),
+
+                const Text(
+                  'Login',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, -5),
-                    ),
-                  ],
                 ),
-                child: Column(
-                  children: [
-                    _buildNumberRow(['1', '2', '3']),
-                    const SizedBox(height: 20),
-                    _buildNumberRow(['4', '5', '6']),
-                    const SizedBox(height: 20),
-                    _buildNumberRow(['7', '8', '9']),
-                    const SizedBox(height: 20),
-                    _buildNumberRow(['clear', '0', 'delete']),
-                    const SizedBox(height: 20),
-                    
-                    // Forgot PIN Link
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ForgotPasswordScreen(),
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        'Lupa PIN?',
+
+                const SizedBox(height: 8),
+
+                Text(
+                  'Masukkan username dan password',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 14,
+                  ),
+                ),
+
+                const SizedBox(height: 40),
+
+                // Form Container
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(25),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Username Field
+                      const Text(
+                        'Username',
                         style: TextStyle(
-                          color: Color(0xFF03D1C5),
-                          fontSize: 16,
+                          color: Colors.white,
                           fontWeight: FontWeight.w600,
+                          fontSize: 14,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      _buildTextField(
+                        controller: _usernameController,
+                        hint: 'Masukkan username',
+                        icon: Icons.person_outline,
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Password Field
+                      const Text(
+                        'Password',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildTextField(
+                        controller: _passwordController,
+                        hint: 'Masukkan password',
+                        icon: Icons.lock_outline,
+                        obscureText: true,
+                        isVisible: _isPasswordVisible,
+                        onVisibilityToggle: () =>
+                            setState(() => _isPasswordVisible = !_isPasswordVisible),
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      // Login Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 54,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _handleLogin,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF03D1C5),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 3,
+                                    color: Color(0xFF03D1C5),
+                                  ),
+                                )
+                              : const Text(
+                                  'LOGIN',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Forgot Password Link
+                      Center(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ForgotPasswordScreen(),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Lupa Password?',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildNumberRow(List<String> numbers) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: numbers.map((number) {
-        if (number.isEmpty) {
-          return const SizedBox(width: 75, height: 75);
-        }
-        
-        if (number == 'delete') {
-          return _NumberButton(
-            onTap: _onDeleteTap,
-            child: const Icon(
-              Icons.backspace_outlined,
-              color: Color(0xFF03D1C5),
-              size: 28,
-            ),
-          );
-        }
-        
-        if (number == 'clear') {
-          return _NumberButton(
-            onTap: _onClearTap,
-            child: const Icon(
-              Icons.clear_rounded,
-              color: Colors.red,
-              size: 28,
-            ),
-          );
-        }
-        
-        return _NumberButton(
-          onTap: () => _onNumberTap(number),
-          child: Text(
-            number,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
-
-class _NumberButton extends StatelessWidget {
-  final VoidCallback onTap;
-  final Widget child;
-
-  const _NumberButton({
-    required this.onTap,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(40),
-      child: Container(
-        width: 75,
-        height: 75,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.grey[100],
-          border: Border.all(
-            color: Colors.grey[300]!,
-            width: 1,
-          ),
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    bool obscureText = false,
+    bool? isVisible,
+    VoidCallback? onVisibilityToggle,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: obscureText && (isVisible != null ? !isVisible : true),
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 16,
         ),
-        child: Center(child: child),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: Colors.white54),
+          prefixIcon: Icon(icon, color: Colors.white70),
+          suffixIcon: onVisibilityToggle != null
+              ? IconButton(
+                  icon: Icon(
+                    isVisible! ? Icons.visibility : Icons.visibility_off,
+                    color: Colors.white70,
+                  ),
+                  onPressed: onVisibilityToggle,
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.all(16),
+        ),
       ),
     );
   }
