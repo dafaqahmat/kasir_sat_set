@@ -1,48 +1,78 @@
-# 🛒 Kasir Sat-Set (Aplikasi Kasir Pintar)
+# Kasir Sat-Set
 
-Kasir Sat-Set adalah aplikasi Point of Sale (POS) atau kasir pintar berbasis **Flutter** yang dirancang khusus untuk toko bangunan, pertanian, atau ritel lainnya. Aplikasi ini berjalan secara *offline* sepenuhnya dengan dukungan database SQLite, memberikan kecepatan dan keamanan data maksimal tanpa bergantung pada koneksi internet.
+Aplikasi kasir (Point of Sale) berbasis Flutter untuk UMKM dengan sistem multi-role (Admin & Kasir). Berjalan offline dengan database SQLite.
 
-## ✨ Fitur Utama
+## Fitur
 
-*   **📦 Manajemen Produk (Master Data):** 
-    *   Kelola nama barang, foto produk, harga beli (modal), harga jual, dan jumlah stok.
-    *   Sistem pencarian (Search) yang responsif dan cepat.
-*   **🛒 Transaksi Kasir (Point of Sale):**
-    *   Keranjang belanja dinamis.
-    *   Perhitungan total, uang tunai, dan kembalian otomatis.
-    *   Pembuatan kode transaksi unik (TRX...) secara otomatis.
-*   **📈 Pencatatan Uang Masuk & Keluar:**
-    *   **Uang Masuk:** Mencatat setiap transaksi penjualan secara otomatis.
-    *   **Uang Keluar:** Sistem cerdas yang mengotomatisasi pencatatan pengeluaran (Harga Beli × Jumlah) setiap kali Anda melakukan **Stok Masuk** (Kulakan/Restock) dari *suplier*.
-*   **🖨️ Dukungan Print Thermal:** Mencetak struk belanja langsung ke printer *Bluetooth thermal*.
-*   **📊 Dashboard & Laporan Realtime:** Menampilkan ringkasan total pendapatan, pengeluaran, dan sisa saldo secara *real-time* berbasis Stream.
+### Admin
+- **Dashboard lengkap** - Ringkasan keuangan, grafik penjualan 7 hari, laporan keuangan (donut chart)
+- **Kelola produk** - CRUD produk dengan foto, harga beli/jual, stok
+- **Transaksi** - Proses penjualan dengan keranjang, hitung kembalian otomatis
+- **Kelola kasir** - Tambah, edit, hapus, reset password kasir
+- **Laporan keuangan** - Uang masuk, uang keluar, riwayat transaksi, laporan keuangan
+- **Pengaturan** - Profil toko, printer thermal, ubah password
 
-## 🛠️ Teknologi yang Digunakan
+### Kasir
+- **Dashboard ringkas** - Ringkasan transaksi hari ini, grafik penjualan 7 hari (hanya transaksi sendiri)
+- **Transaksi** - Proses penjualan (tidak bisa kelola produk/kasir)
+- **Pengaturan printer** - Koneksi printer thermal Bluetooth
+- **Ubah password** - Ganti password sendiri
 
-*   **Framework:** [Flutter](https://flutter.dev/) (Dart)
-*   **Database:** SQLite (`sqflite` package)
-*   **Format Uang:** `intl` (NumberFormat untuk Rupiah)
-*   **Kamera & Galeri:** `image_picker` (Untuk foto produk)
-*   **State Management:** Reactive Programming dengan `StreamController` murni.
+### Fitur Umum
+- **Login multi-role** - Username & password, routing otomatis ke dashboard sesuai role
+- **Auto-track income** - Pencatatan pendapatan bulanan otomatis per petugas (contoh: "Transaksi Masuk 2026 Bulan Agustus dari Admin Dafa")
+- **Print thermal Bluetooth** - Cetak struk ke printer thermal (transaksi tetap bisa lanjut meski bluetooth mati)
+- **Scan barcode** - Tambah produk ke keranjang dengan scan barcode
+- **Realtime update** - Data terupdate otomatis menggunakan Stream
+- **Sound effect** - Notifikasi suara saat transaksi berhasil
 
-## 🚀 Cara Menjalankan Aplikasi (Development)
+## Teknologi
 
-1. Pastikan Anda telah menginstal Flutter SDK dan Android Studio / VS Code.
-2. *Clone* atau unduh *repository* ini.
-3. Buka terminal di direktori proyek dan jalankan:
-   ```bash
-   flutter pub get
-   ```
-4. Hubungkan perangkat Android (fisik) atau nyalakan Emulator.
-5. Jalankan aplikasi:
-   ```bash
-   flutter run
-   ```
+- **Flutter** (Dart)
+- **SQLite** (sqflite) - Database lokal
+- **flutter_blue_plus** - Bluetooth thermal printer
+- **mobile_scanner** - Scan barcode
+- **shared_preferences** - Session management
+- **StreamController** - State management
 
-## ⚠️ Catatan Penting (Mode Rilis)
-Jika Anda ingin merilis aplikasi ini untuk produksi (digunakan oleh toko sungguhan), pastikan Anda **mematikan fungsi Seeder** (Data Palsu) agar database dimulai dari keadaan kosong.
-*   Buka file `lib/database/database_helper.dart`
-*   Beri komentar pada pemanggilan `await DatabaseSeeder.run(db);` di fungsi `_createDB()`.
+## Cara Menjalankan
 
----
-*Dibuat dengan ❤️ untuk mempermudah UMKM Indonesia.*
+```bash
+flutter pub get
+flutter run
+```
+
+## Struktur Role
+
+### Admin Pertama
+User pertama yang mendaftar otomatis menjadi **Admin**. Admin bisa:
+- Kelola semua aspek toko
+- Tambah/hapus/edit kasir
+- Lihat semua laporan keuangan
+
+### Kasir
+Kasir ditambahkan oleh Admin melalui menu "Kelola Kasir". Kasir hanya bisa:
+- Transaksi
+- Lihat dashboard sendiri (hanya transaksi milik mereka)
+- Ubah password sendiri
+- Pengaturan printer
+
+## Database
+
+Tabel utama:
+- `users` - id, name, password, role (admin/kasir), created_at
+- `products` - id, nama, harga, harga_beli, image_path, stock
+- `transactions` - id, transaction_code, user_id, total_amount, cash_received, change, created_at
+- `incomes` - id, description, amount, date
+- `expenses` - id, description, amount, date
+
+## Catatan Penting
+
+- Aplikasi berjalan **100% offline**
+- Data tersimpan di perangkat, jika aplikasi di-uninstall maka data hilang
+- Untuk produksi, matikan seeder di `lib/database/database_helper.dart` (hapus pemanggilan `DatabaseSeeder.run(db)`)
+
+## Lisensi
+
+Aplikasi ini dibuat untuk keperluan pembelajaran dan UMKM.
+
