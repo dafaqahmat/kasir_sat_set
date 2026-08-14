@@ -362,33 +362,25 @@ class _TransactionTabState extends State<TransactionTab>
           ],
         ),
         content: const Text(
-          'Bluetooth harus dinyalakan untuk melakukan transaksi dan mencetak struk.\n\nSetelah Bluetooth dinyalakan, printer akan otomatis tersambung jika pernah terhubung sebelumnya.',
+          'Bluetooth tidak aktif. Transaksi tetap bisa dilanjutkan, tetapi struk tidak akan dicetak.\n\nApakah Anda ingin melanjutkan?',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Tutup', style: TextStyle(color: Colors.grey[600])),
+            child: Text('Batal', style: TextStyle(color: Colors.grey[600])),
           ),
           ElevatedButton(
-            onPressed: () async {
+            onPressed: () {
               Navigator.pop(context);
-              _showSnackBar('Menyalakan Bluetooth...', Colors.blue);
-              try {
-                await FlutterBluePlus.turnOn();
-              } catch (e) {
-                _showSnackBar(
-                  'Silakan nyalakan Bluetooth secara manual',
-                  Colors.orange,
-                );
-              }
+              _showCashPaymentDialog(canPrint: false);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF03D1C5),
+              backgroundColor: Colors.orange,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: const Text('Nyalakan'),
+            child: const Text('Lanjutkan'),
           ),
         ],
       ),
