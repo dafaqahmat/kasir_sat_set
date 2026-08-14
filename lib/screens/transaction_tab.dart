@@ -634,8 +634,8 @@ class _TransactionTabState extends State<TransactionTab>
         await DatabaseHelper.instance.decreaseProductStock(cartItem.product.id!, cartItem.quantity);
       }
 
-      // 🆕 AUTO-TRACK: Tambahkan transaksi ke income bulanan
-      await DatabaseHelper.instance.autoTrackMonthlyIncome(_totalAmount);
+      // 🆕 AUTO-TRACK: Tambahkan transaksi ke income bulanan dengan info petugas
+      await DatabaseHelper.instance.autoTrackMonthlyIncome(_totalAmount, widget.user.name, widget.user.role);
 
       await _soundService.playKaching();
       bool printSuccess = false;

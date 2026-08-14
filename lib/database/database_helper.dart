@@ -525,8 +525,8 @@ class DatabaseHelper {
     return result;
   }
 
-  // AUTO-TRACK: Tambah/update income dari transaksi bulanan
-  Future<void> autoTrackMonthlyIncome(double amount) async {
+  // AUTO-TRACK: Tambah/update income dari transaksi bulanan dengan info petugas
+  Future<void> autoTrackMonthlyIncome(double amount, String userName, String userRole) async {
     final now = DateTime.now();
     final monthNames = [
       'Januari',
@@ -543,12 +543,13 @@ class DatabaseHelper {
       'Desember',
     ];
 
+    final roleLabel = userRole == 'admin' ? 'Admin' : 'Kasir';
     final description =
-        'Transaksi Masuk ${now.year} Bulan ${monthNames[now.month - 1]}';
+        'Transaksi Masuk ${now.year} Bulan ${monthNames[now.month - 1]} dari $roleLabel $userName';
 
     final db = await instance.database;
 
-    // Cek apakah sudah ada income untuk bulan ini
+    // Cek apakah sudah ada income untuk bulan ini dari user ini
     final result = await db.query(
       'incomes',
       where: 'description = ?',
@@ -565,7 +566,7 @@ class DatabaseHelper {
       );
       await updateIncome(updatedIncome);
       print(
-        '✅ [AUTO-TRACK] Updated monthly income: +Rp$amount (Total: Rp${updatedIncome.amount})',
+        '✅ [AUTO-TRACK] Updated monthly income: +Rp$amount (Total: Rp${updatedIncome.amount}) - $description',
       );
     } else {
       // CREATE: Buat income baru untuk bulan ini
@@ -575,7 +576,7 @@ class DatabaseHelper {
         date: now,
       );
       await createIncome(newIncome);
-      print('✅ [AUTO-TRACK] Created new monthly income: Rp$amount');
+      print('✅ [AUTO-TRACK] Created new monthly income: Rp$amount - $description');
     }
   }
 
